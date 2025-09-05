@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define our Enums for Status and Risk Level
+enum AssetStatus {
+  Proposed
+  InReview
+  Active
+  Retired
+}
+
+enum RiskLevel {
+  Low
+  Medium
+  High
+  Severe
+}
+
+// Define the AIAsset model. This will become our database table.
+model AIAsset {
+  id                 String      @id @default(cuid()) // Unique ID, generated automatically
+  name               String
+  owner              String
+  businessPurpose    String
+  status             AssetStatus @default(Proposed) // Defaults to 'Proposed'
+  riskClassification RiskLevel
+  
+  dateRegistered     DateTime    @default(now()) // Defaults to the time of creation
+  updatedAt          DateTime    @updatedAt // Automatically updates on any change
+}
