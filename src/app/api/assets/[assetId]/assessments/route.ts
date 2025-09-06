@@ -42,12 +42,13 @@ const nistQuestionnaire: Prisma.JsonObject = {
  */
 export async function GET(
   request: Request,
-  { params }: { params: { assetId: string } }
+  { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
+    const { assetId } = await params;
     const assessments = await prisma.assessment.findMany({
       where: {
-        assetId: params.assetId,
+        assetId: assetId,
       },
       orderBy: {
         createdAt: 'desc', // Show the newest assessments first
@@ -66,10 +67,11 @@ export async function GET(
  */
 export async function POST(
   request: Request,
-  { params }: { params: { assetId: string } }
+  { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
     const body = await request.json();
+    const { assetId } = await params;
     
     // For now, we'll use a fixed name for the assessment
     // In the future, we might let the user choose a template
@@ -78,7 +80,7 @@ export async function POST(
     const newAssessment = await prisma.assessment.create({
       data: {
         name: assessmentName,
-        assetId: params.assetId,
+        assetId: assetId,
         questions: nistQuestionnaire, // Store the default questionnaire
       },
     });

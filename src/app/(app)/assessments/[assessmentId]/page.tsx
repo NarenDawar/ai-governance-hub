@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 // MODIFIED: Import the 'AssessmentStatus' type as well
-import { Assessment, AssessmentStatus, AssessmentStatusEnum } from '../../../lib/types';
+import { Assessment, AssessmentStatus, AssessmentStatusEnum } from '../../../../lib/types';
 import { Prisma } from '@prisma/client';
 
 // Define a more specific type for our questionnaire structure

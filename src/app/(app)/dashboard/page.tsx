@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { RiskLevel, AssetStatus, AssessmentStatus } from '@prisma/client';
+import RiskBarChart from '../../../components/dashboard/RiskBarChart';
+import AssessmentStatusPieChart from '../../../components/dashboard/AssessmentStatusPieChart';
 
 // Define the shape of our stats data
 type DashboardStats = {
@@ -65,47 +67,15 @@ export default function DashboardPage() {
         </div>
 
         {/* More detailed breakdowns */}
-        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Assets by Risk */}
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="font-semibold text-gray-800">Assets by Risk Classification</h2>
-                <ul className="mt-4 space-y-2">
-                    {Object.entries(stats.riskCounts).map(([risk, count]) => (
-                        <li key={risk} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{risk}</span>
-                            <span className="font-medium text-gray-800">{count}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
+        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2" style={{minHeight: '300px'}}>
+            {/* Risk Distribution Bar Chart */}
+            <RiskBarChart data={stats} />
 
-            {/* Assessments by Status */}
-             <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="font-semibold text-gray-800">Assessments by Status</h2>
-                <ul className="mt-4 space-y-2">
-                     {Object.entries(stats.assessmentStatusCounts).map(([status, count]) => (
-                        <li key={status} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{status}</span>
-                            <span className="font-medium text-gray-800">{count}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            {/* Assets by Status */}
-             <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="font-semibold text-gray-800">Assets by Status</h2>
-                <ul className="mt-4 space-y-2">
-                     {Object.entries(stats.assetStatusCounts).map(([status, count]) => (
-                        <li key={status} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{status}</span>
-                            <span className="font-medium text-gray-800">{count}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
+            {/* Assessment Status Pie Chart */}
+            <AssessmentStatusPieChart data={stats} />
         </div>
       </div>
     </div>
   );
 }
+

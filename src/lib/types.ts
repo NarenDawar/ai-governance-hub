@@ -3,7 +3,7 @@ import {
   AssetStatus as PrismaAssetStatus, 
   RiskLevel as PrismaRiskLevel,
   AssessmentStatus as PrismaAssessmentStatus,
-  Prisma, // Import Prisma to use its JsonObject type
+  Prisma,
 } from '@prisma/client';
 
 // Re-exporting them makes it easy to use these types throughout the frontend.
@@ -16,7 +16,7 @@ export const RiskLevelEnum = PrismaRiskLevel;
 export const AssessmentStatusEnum = PrismaAssessmentStatus;
 
 
-// The core interface for an AI Asset, matching our database model.
+// The core interface for an AI Asset
 export interface AIAsset {
   id: string;
   name: string;
@@ -25,17 +25,34 @@ export interface AIAsset {
   status: AssetStatus;
   riskClassification: RiskLevel;
   dateRegistered: string; 
-  updatedAt: string;      
+  updatedAt: string;
+  vendor?: {
+    name: string;
+  } | null;
 }
 
-// NEW: The interface for a single Assessment, matching our database model.
+// The interface for a single Assessment
 export interface Assessment {
   id: string;
   name: string;
   status: AssessmentStatus;
-  questions: Prisma.JsonObject; // The questionnaire is a flexible JSON object
+  questions: Prisma.JsonObject;
   createdAt: string;
   updatedAt: string;
   assetId: string;
 }
+
+// --- THIS IS THE KEY CHANGE ---
+// The interface for an Audit Log entry, now including the user
+export interface AuditLog {
+  id: string;
+  action: string;
+  details: string;
+  createdAt: string;
+  user: { // The user object is now part of the log
+    name: string | null;
+    email: string | null;
+  } | null;
+}
+// -----------------------------
 

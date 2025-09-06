@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
-import { AssessmentStatus } from '@prisma/client';
+import { AssessmentStatus, ActionType } from '@prisma/client';
+import { createAuditLog } from '../../../../lib/auditLog'; // Import the logging service
 
 /**
  * Handles GET requests to /api/assessments/[assessmentId]
@@ -8,11 +9,12 @@ import { AssessmentStatus } from '@prisma/client';
  */
 export async function GET(
   request: Request,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
+    const { assessmentId } = await params;
     const assessment = await prisma.assessment.findUnique({
-      where: { id: params.assessmentId },
+      where: { id: assessmentId },
     });
 
     if (!assessment) {
@@ -27,34 +29,46 @@ export async function GET(
 
 /**
  * Handles PATCH requests to /api/assessments/[assessmentId]
- * Updates an existing assessment (e.g., saves question answers).
+ * Updates an existing assessment and logs relevant events.
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const body = await request.json();
     const { questions, status } = body;
+    const { assessmentId } = await params;
 
-    // Basic validation
-    if (!questions && !status) {
-      return NextResponse.json({ error: 'No update data provided.' }, { status: 400 });
-    }
-    
-    // Validate status if it's provided
-    if (status && !Object.values(AssessmentStatus).includes(status)) {
-        return NextResponse.json({ error: 'Invalid status value.' }, { status: 400 });
+    // Fetch the original assessment to compare status changes
+    const originalAssessment = await prisma.assessment.findUnique({ where: { id: assessmentId } });
+    if (!originalAssessment) {
+        return NextResponse.json({ error: 'Assessment not found.' }, { status: 404 });
     }
 
     const updatedAssessment = await prisma.assessment.update({
-      where: { id: params.assessmentId },
+      where: { id: assessmentId },
       data: {
-        // Only update fields that are provided in the request
         ...(questions && { questions }),
         ...(status && { status }),
       },
     });
+
+    // --- Create an audit log if the status has changed ---
+    if (status && status !== originalAssessment.status) {
+      // Determine the correct action type based on the new status
+      const action = status === AssessmentStatus.Completed 
+        ? ActionType.ASSESSMENT_COMPLETED 
+        : ActionType.ASSESSMENT_UPDATED;
+      
+      await createAuditLog(
+        action, 
+        `Assessment status for "${updatedAssessment.name}" changed to ${status}.`,
+        updatedAssessment.assetId,
+        'system' // TODO: Replace with actual user ID when auth is implemented
+      );
+    }
+    // ---------------------------------------------------
 
     return NextResponse.json(updatedAssessment, { status: 200 });
   } catch (error) {
@@ -62,3 +76,4 @@ export async function PATCH(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+

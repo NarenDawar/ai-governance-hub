@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
 import prisma from '../../../lib/prisma';
 import { RiskLevel } from '@prisma/client';
+import { createAuditLog } from '../../../lib/auditLog';
 
 /**
  * Handles GET requests to /api/assets
@@ -12,7 +15,6 @@ export async function GET() {
       orderBy: {
         dateRegistered: 'desc',
       },
-      // Include the related vendor's name to display in the UI if needed
       include: {
         vendor: {
           select: {
@@ -33,9 +35,15 @@ export async function GET() {
  * Creates a new AI asset in the database.
  */
 export async function POST(request: Request) {
+  // Get the current user's session
+  const session = await getServerSession(authOptions);
+  // If no session or user ID, deny access
+  if (!session || !session.user?.id) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    // Destructure all expected fields, including the new optional vendorId
     const { name, owner, businessPurpose, riskClassification, vendorId } = body;
 
     if (!name || !owner || !businessPurpose || !riskClassification) {
@@ -50,7 +58,6 @@ export async function POST(request: Request) {
         owner,
         businessPurpose,
         riskClassification: riskLevel,
-        // Conditionally connect to a vendor if a vendorId was provided
         ...(vendorId && {
           vendor: {
             connect: { id: vendorId },
@@ -58,6 +65,15 @@ export async function POST(request: Request) {
         }),
       },
     });
+
+    // Create an audit log entry with the authenticated user's ID
+    await createAuditLog(
+      'ASSET_CREATED',
+      `Asset "${name}" was created.`,
+      newAsset.id,
+      session.user.id
+    );
+
     return NextResponse.json(newAsset, { status: 201 });
   } catch (error) {
     console.error("Failed to create asset:", error);

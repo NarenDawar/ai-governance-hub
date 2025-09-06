@@ -1,23 +1,109 @@
-// datasource db defines the database connection details.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// generator client specifies that we want to generate Prisma Client.
 generator client {
   provider = "prisma-client-js"
 }
 
-// Enum for the risk classification of an AI Asset
-enum RiskLevel {
-  Low
-  Medium
-  High
-  Severe
+
+model AIAsset {
+  id                 String       @id @default(cuid())
+  // --- NEW: A unique ID from the source system (e.g., AWS ARN) ---
+  discoveredId       String?      @unique
+  // -----------------------------------------------------------------
+  name               String
+  owner              String
+  businessPurpose    String
+  status             AssetStatus  @default(Proposed)
+  riskClassification RiskLevel    @default(Low)
+  dateRegistered     DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  vendorId           String?
+  vendor             Vendor?      @relation(fields: [vendorId], references: [id])
+  assessments        Assessment[]
+  auditLogs          AuditLog[]
 }
 
-// Enum for the lifecycle status of an AI Asset
+// ... all other models and enums remain the same ...
+
+model Vendor {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  website   String
+  assets    AIAsset[]
+}
+
+model Assessment {
+  id        String           @id @default(cuid())
+  name      String
+  status    AssessmentStatus @default(NotStarted)
+  questions Json
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  assetId   String
+  asset     AIAsset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String     @id @default(cuid())
+  action    ActionType
+  details   String
+  createdAt DateTime   @default(now())
+  assetId   String?
+  asset     AIAsset?   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// --- AUTHENTICATION MODELS REQUIRED BY NEXT-AUTH ---
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- ENUMS ---
 enum AssetStatus {
   Proposed
   InReview
@@ -25,7 +111,13 @@ enum AssetStatus {
   Retired
 }
 
-// Enum for the status of a risk assessment
+enum RiskLevel {
+  Low
+  Medium
+  High
+  Severe
+}
+
 enum AssessmentStatus {
   NotStarted
   InProgress
@@ -33,45 +125,16 @@ enum AssessmentStatus {
   Archived
 }
 
-// The core model for an AI Asset
-model AIAsset {
-  id                 String       @id @default(cuid())
-  name               String
-  owner              String
-  businessPurpose    String
-  status             AssetStatus  @default(Proposed)
-  riskClassification RiskLevel
-  dateRegistered     DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  assessments        Assessment[]
-
-  // --- NEW VENDOR RELATIONSHIP ---
-  // An AI Asset can optionally be linked to one Vendor.
-  vendorId           String?
-  vendor             Vendor?      @relation(fields: [vendorId], references: [id])
-  // -----------------------------
+enum ActionType {
+  ASSET_CREATED
+  ASSET_UPDATED
+  ASSESSMENT_STARTED
+  ASSESSMENT_UPDATED
+  ASSESSMENT_COMPLETED
+  VENDOR_CREATED
+  VENDOR_LINKED_TO_ASSET
+  AUTO_DISCOVERY_COMPLETED
 }
 
-// NEW: The model for a third-party AI Vendor
-model Vendor {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  website   String
-  status    String    @default("Active") // e.g., Active, In Review, Denied
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  assets    AIAsset[] // A Vendor can be associated with many AI Assets
-}
 
-// The model for a single Risk Assessment
-model Assessment {
-  id        String           @id @default(cuid())
-  name      String
-  status    AssessmentStatus @default(NotStarted)
-  questions Json // The questionnaire structure and answers
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  assetId   String
-  asset     AIAsset          @relation(fields: [assetId], references: [id])
-}
 
