@@ -1,23 +1,15 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
+// datasource db defines the database connection details.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Define our Enums for Status and Risk Level
-enum AssetStatus {
-  Proposed
-  InReview
-  Active
-  Retired
+// generator client specifies that we want to generate Prisma Client.
+generator client {
+  provider = "prisma-client-js"
 }
 
+// Enum for the risk classification of an AI Asset
 enum RiskLevel {
   Low
   Medium
@@ -25,15 +17,61 @@ enum RiskLevel {
   Severe
 }
 
-// Define the AIAsset model. This will become our database table.
+// Enum for the lifecycle status of an AI Asset
+enum AssetStatus {
+  Proposed
+  InReview
+  Active
+  Retired
+}
+
+// Enum for the status of a risk assessment
+enum AssessmentStatus {
+  NotStarted
+  InProgress
+  Completed
+  Archived
+}
+
+// The core model for an AI Asset
 model AIAsset {
-  id                 String      @id @default(cuid()) // Unique ID, generated automatically
+  id                 String       @id @default(cuid())
   name               String
   owner              String
   businessPurpose    String
-  status             AssetStatus @default(Proposed) // Defaults to 'Proposed'
+  status             AssetStatus  @default(Proposed)
   riskClassification RiskLevel
-  
-  dateRegistered     DateTime    @default(now()) // Defaults to the time of creation
-  updatedAt          DateTime    @updatedAt // Automatically updates on any change
+  dateRegistered     DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  assessments        Assessment[]
+
+  // --- NEW VENDOR RELATIONSHIP ---
+  // An AI Asset can optionally be linked to one Vendor.
+  vendorId           String?
+  vendor             Vendor?      @relation(fields: [vendorId], references: [id])
+  // -----------------------------
 }
+
+// NEW: The model for a third-party AI Vendor
+model Vendor {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  website   String
+  status    String    @default("Active") // e.g., Active, In Review, Denied
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  assets    AIAsset[] // A Vendor can be associated with many AI Assets
+}
+
+// The model for a single Risk Assessment
+model Assessment {
+  id        String           @id @default(cuid())
+  name      String
+  status    AssessmentStatus @default(NotStarted)
+  questions Json // The questionnaire structure and answers
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  assetId   String
+  asset     AIAsset          @relation(fields: [assetId], references: [id])
+}
+
