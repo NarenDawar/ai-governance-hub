@@ -8,7 +8,12 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "AI Governance & Compliance Hub",
   description: "A centralized system for managing AI governance, risk, and compliance.",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
+
+// a comment
 
 // This is the root layout for the entire application.
 // Its only job is to set up the HTML shell and the session provider.
