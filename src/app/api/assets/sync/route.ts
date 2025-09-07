@@ -56,7 +56,7 @@ export async function POST() {
       await createAuditLog(
         ActionType.AUTO_DISCOVERY_COMPLETED,
         `Auto-discovery sync completed. Found and registered ${result.count} new asset(s).`,
-        '', // No specific assetId for this global action
+        null, // No specific assetId for this global action
         session.user.id
       );
     }

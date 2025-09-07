@@ -29,8 +29,8 @@ export default function VendorsPage() {
         if (!response.ok) throw new Error('Failed to fetch vendors.');
         const data: Vendor[] = await response.json();
         setVendors(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch vendors');
       } finally {
         setIsLoading(false);
       }

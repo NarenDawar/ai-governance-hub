@@ -23,7 +23,7 @@ export default function HomePage() {
       if (!response.ok) throw new Error('Failed to fetch data');
       const data: AIAsset[] = await response.json();
       setAssets(data);
-    } catch (err) {
+    } catch {
       setError('Could not fetch AI assets. Please try again later.');
     }
   }, []);
@@ -67,8 +67,8 @@ export default function HomePage() {
       if (result.newAssetCount > 0) {
         await fetchAssets();
       }
-    } catch (err: any) {
-      setSyncMessage(err.message);
+    } catch (err: unknown) {
+      setSyncMessage(err instanceof Error ? err.message : 'Sync failed');
     } finally {
       setIsSyncing(false);
       setTimeout(() => setSyncMessage(''), 5000);

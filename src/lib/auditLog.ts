@@ -5,8 +5,8 @@ import { ActionType } from '@prisma/client';
 export async function createAuditLog(
   action: ActionType, 
   details: string, 
-  assetId: string,
-  userId: string // The ID of the user performing the action
+  assetId: string | null,
+  userId: string | null // The ID of the user performing the action
 ) {
   try {
     await prisma.auditLog.create({

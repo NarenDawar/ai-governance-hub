@@ -37,8 +37,8 @@ export default function DashboardPage() {
         }
         const data: DashboardStats = await response.json();
         setStats(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setIsLoading(false);
       }
