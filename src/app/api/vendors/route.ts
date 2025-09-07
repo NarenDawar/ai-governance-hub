@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json(newVendor, { status: 201 });
   } catch (error) {
     // Handle potential unique constraint violation for vendor name
-    if (error instanceof Error && 'code' in error && (error as any).code === 'P2002') {
+    if (error instanceof Error && 'code' in error && (error as { code: string }).code === 'P2002') {
       return NextResponse.json({ error: 'A vendor with this name already exists.' }, { status: 409 });
     }
     console.error('Failed to create vendor:', error);

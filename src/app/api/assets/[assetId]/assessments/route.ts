@@ -70,7 +70,6 @@ export async function POST(
   { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
-    const body = await request.json();
     const { assetId } = await params;
     
     // For now, we'll use a fixed name for the assessment

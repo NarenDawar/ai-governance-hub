@@ -32,7 +32,7 @@ const MOCK_DISCOVERED_ASSETS = [
  * Handles POST requests to /api/assets/sync
  * Simulates discovering and creating new assets from a cloud provider.
  */
-export async function POST(request: Request) {
+export async function POST() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
