@@ -4,6 +4,16 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "../../../../lib/prisma";
 import { Adapter } from "next-auth/adapters";
 
+interface JwtCallbackParams {
+  token: any; // Using 'any' here is a pragmatic choice if the default token type is complex
+  user: any;
+}
+
+interface SessionCallbackParams {
+  session: any;
+  token: any;
+}
+
 export const authOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
@@ -20,7 +30,7 @@ export const authOptions = {
   // Implement the callbacks to manage the JWT payload
   callbacks: {
     // 1. The jwt callback is called when a JWT is created or updated.
-    async jwt({ token, user }: { token: any; user: any }) {
+    async jwt({ token, user }: JwtCallbackParams) {
       // On initial sign in, the `user` object is available.
       // Persist the user's ID from the database into the token.
       if (user) {
@@ -29,7 +39,7 @@ export const authOptions = {
       return token;
     },
     // 2. The session callback is called when a session is checked.
-    async session({ session, token }: { session: any; token: any }) {
+    async session({ session, token }: SessionCallbackParams) {
       // The token has the user's ID we stored in the jwt callback.
       // Add this ID to the session object so it's available on the client.
       if (session.user && token.id) {

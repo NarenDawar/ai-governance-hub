@@ -48,8 +48,8 @@ export default function AssessmentPage() {
         setAssessment(data);
         setQuestionnaire(data.questions as Questionnaire);
         setAssetId(data.assetId);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch assessment.');
       } finally {
         setIsLoading(false);
       }

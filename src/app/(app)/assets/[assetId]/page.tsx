@@ -73,8 +73,8 @@ export default function AssetDetailPage() {
         const logData: AuditLog[] = await logRes.json();
         setAuditLog(logData);
 
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
       } finally {
         setIsLoading(false);
         setIsLoadingAssessments(false);

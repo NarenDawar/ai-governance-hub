@@ -57,8 +57,8 @@ export default function VendorsPage() {
       setVendors(prev => [...prev, newVendor].sort((a, b) => a.name.localeCompare(b.name)));
       setNewVendorName('');
       setNewVendorWebsite('');
-    } catch (err: any) {
-      setFormError(err.message);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to create vendor.');
     } finally {
       setIsSubmitting(false);
     }
