@@ -3,11 +3,11 @@
 import { useSession } from 'next-auth/react';
 // 1. Import useSearchParams to read URL parameters
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import AuthButton from '@/components/AuthButton';
 
 // This is the dedicated, unprotected sign-in page.
-export default function SignInPage() {
+function SignInPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   // 2. Get the search params from the URL
@@ -53,4 +53,17 @@ export default function SignInPage() {
 
   // Render nothing while redirecting
   return null;
+}
+
+// Wrap the component that uses useSearchParams in Suspense
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <p>Loading...</p>
+      </div>
+    }>
+      <SignInPageContent />
+    </Suspense>
+  );
 }
