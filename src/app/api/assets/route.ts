@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../../lib/auth'; // Corrected import path
 import prisma from '../../../lib/prisma';
 import { RiskLevel } from '@prisma/client';
 import { createAuditLog } from '../../../lib/auditLog';
