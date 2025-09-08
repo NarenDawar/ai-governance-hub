@@ -20,13 +20,13 @@ export const authOptions = {
     strategy: "jwt" as const,
   },
   callbacks: {
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       if (session.user) {
         session.user.id = token.id as string;
       }
