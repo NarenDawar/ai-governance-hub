@@ -65,7 +65,7 @@ export async function PATCH(
         action, 
         `Assessment status for "${updatedAssessment.name}" changed to ${status}.`,
         updatedAssessment.assetId,
-        'system' // TODO: Replace with actual user ID when auth is implemented
+        null // No user ID available in this context
       );
     }
     // ---------------------------------------------------
