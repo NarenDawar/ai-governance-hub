@@ -9,14 +9,14 @@ import { authOptions } from '../../../../lib/auth';
  */
 export async function GET(
   request: Request,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
-    const { vendorId } = params;
+    const { vendorId } = await params; // CORRECTED: Added 'await' here
     const vendor = await prisma.vendor.findUnique({
       where: { id: vendorId },
       include: {
-        aiAssets: { // Include the related AI assets
+        aiAssets: {
           orderBy: {
             name: 'asc'
           }
@@ -42,7 +42,7 @@ export async function GET(
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -50,19 +50,17 @@ export async function PATCH(
     }
 
     try {
-        const { vendorId } = params;
+        const { vendorId } = await params; // CORRECTED: Added 'await' here
         const body = await request.json();
-        const { name, website } = body;
+        const { status } = body;
 
-        if (!name || !website) {
-            return NextResponse.json({ error: 'Name and website are required.' }, { status: 400 });
+        if (!status) {
+            return NextResponse.json({ error: 'Status is required.' }, { status: 400 });
         }
-        
-        // In a real app, you'd validate the status against your Prisma Enum
         
         const updatedVendor = await prisma.vendor.update({
             where: { id: vendorId },
-            data: { name: body.name, website: body.website },
+            data: { status },
         });
 
         return NextResponse.json(updatedVendor, { status: 200 });

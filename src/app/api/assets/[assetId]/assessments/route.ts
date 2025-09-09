@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
+import { Prisma } from '@prisma/client'; // IMPORT THIS
 
 /**
  * Handles GET requests to /api/assets/[assetId]/assessments
@@ -7,16 +8,16 @@ import prisma from '../../../../../lib/prisma';
  */
 export async function GET(
   request: Request,
-  { params }: { params: { assetId: string } }
+  { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
-    const { assetId } = params;
+    const { assetId } = await params;
     const assessments = await prisma.assessment.findMany({
       where: {
         assetId: assetId,
       },
       orderBy: {
-        createdAt: 'desc', // Show the newest assessments first
+        createdAt: 'desc',
       },
     });
     return NextResponse.json(assessments);
@@ -32,17 +33,16 @@ export async function GET(
  */
 export async function POST(
   request: Request,
-  { params }: { params: { assetId: string } }
+  { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
     const { templateId } = await request.json();
-    const { assetId } = params;
+    const { assetId } = await params;
 
     if (!templateId) {
       return NextResponse.json({ error: 'templateId is required' }, { status: 400 });
     }
 
-    // 1. Fetch the chosen template from the database
     const template = await prisma.assessmentTemplate.findUnique({
       where: { id: templateId },
     });
@@ -53,14 +53,14 @@ export async function POST(
 
     const newAssessment = await prisma.assessment.create({
       data: {
-        // 2. Use the template's name and questions for the new assessment
         name: template.name,
         assetId: assetId,
-        questions: template.questions as any, // @ts-ignore
+        // CORRECTED: Added 'as Prisma.JsonObject' to fix the type error
+        questions: template.questions as Prisma.JsonObject,
       },
     });
 
-    return NextResponse.json(newAssessment, { status: 201 }); // 201 Created
+    return NextResponse.json(newAssessment, { status: 201 });
   } catch (error) {
     console.error('Failed to create assessment:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
