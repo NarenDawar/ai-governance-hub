@@ -7,12 +7,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 model AIAsset {
   id                 String       @id @default(cuid())
-  // --- NEW: A unique ID from the source system (e.g., AWS ARN) ---
   discoveredId       String?      @unique
-  // -----------------------------------------------------------------
   name               String
   owner              String
   businessPurpose    String
@@ -26,13 +23,13 @@ model AIAsset {
   auditLogs          AuditLog[]
 }
 
-// ... all other models and enums remain the same ...
-
 model Vendor {
-  id        String     @id @default(cuid())
-  name      String     @unique
+  id        String       @id @default(cuid())
+  name      String       @unique
   website   String
-  assets    AIAsset[]
+  status    VendorStatus @default(Active)
+  // --- THIS IS THE CORRECTED RELATION FIELD ---
+  aiAssets  AIAsset[]
 }
 
 model Assessment {
@@ -44,6 +41,13 @@ model Assessment {
   updatedAt DateTime         @updatedAt
   assetId   String
   asset     AIAsset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model AssessmentTemplate {
+  id        String @id @default(cuid())
+  name      String @unique
+  questions Json
+  createdAt DateTime @default(now())
 }
 
 model AuditLog {
@@ -104,6 +108,12 @@ model VerificationToken {
 }
 
 // --- ENUMS ---
+enum VendorStatus {
+  Active
+  InReview
+  Terminated
+}
+
 enum AssetStatus {
   Proposed
   InReview
@@ -135,6 +145,3 @@ enum ActionType {
   VENDOR_LINKED_TO_ASSET
   AUTO_DISCOVERY_COMPLETED
 }
-
-
-

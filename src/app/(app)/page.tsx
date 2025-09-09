@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { AIAsset, AssetStatus, RiskLevel } from '../../lib/types';
+import { AIAsset, AssetStatus, RiskLevel, AssetStatusEnum, RiskLevelEnum } from '../../lib/types';
 import RegisterAssetForm from '../../components/RegisterAssetForm';
 
 const statusColorMap: { [key in AssetStatus]: string } = { Active: 'bg-green-100 text-green-800', InReview: 'bg-yellow-100 text-yellow-800', Proposed: 'bg-blue-100 text-blue-800', Retired: 'bg-gray-100 text-gray-800' };
@@ -17,21 +17,43 @@ export default function HomePage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
 
-  const fetchAssets = useCallback(async () => {
-    try {
-      const response = await fetch('/api/assets');
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const data: AIAsset[] = await response.json();
-      setAssets(data);
-    } catch {
-      setError('Could not fetch AI assets. Please try again later.');
-    }
-  }, []);
+  // --- NEW: State for search and filtering ---
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<AssetStatus | 'All'>('All');
+  const [riskFilter, setRiskFilter] = useState<RiskLevel | 'All'>('All');
+  // -------------------------------------------
 
   useEffect(() => {
-    setIsLoading(true);
-    fetchAssets().finally(() => setIsLoading(false));
-  }, [fetchAssets]);
+    const fetchAssets = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/assets');
+        if (!response.ok) throw new Error('Failed to fetch data');
+        const data: AIAsset[] = await response.json();
+        setAssets(data);
+      } catch {
+        setError('Could not fetch AI assets. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAssets();
+  }, []);
+
+  // --- NEW: Filtering logic ---
+  const filteredAssets = useMemo(() => {
+    return assets.filter(asset => {
+      const matchesSearch = searchTerm === '' || 
+        asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        asset.businessPurpose.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'All' || asset.status === statusFilter;
+      const matchesRisk = riskFilter === 'All' || asset.riskClassification === riskFilter;
+
+      return matchesSearch && matchesStatus && matchesRisk;
+    });
+  }, [assets, searchTerm, statusFilter, riskFilter]);
+  // ----------------------------
 
   const handleSaveAsset = async (data: { 
     name: string; 
@@ -54,8 +76,9 @@ export default function HomePage() {
       console.error('Error saving asset:', err);
     }
   };
-
+  
   const handleSync = async () => {
+    // ... (handleSync function remains the same)
     setIsSyncing(true);
     setSyncMessage('');
     try {
@@ -64,9 +87,11 @@ export default function HomePage() {
       if (!response.ok) throw new Error(result.error || 'Sync failed');
       
       setSyncMessage(result.message);
-      if (result.newAssetCount > 0) {
-        await fetchAssets();
-      }
+      // Refetch assets after a successful sync
+      const assetResponse = await fetch('/api/assets');
+      const data: AIAsset[] = await assetResponse.json();
+      setAssets(data);
+
     } catch (err: unknown) {
       setSyncMessage(err instanceof Error ? err.message : 'Sync failed');
     } finally {
@@ -79,7 +104,7 @@ export default function HomePage() {
     <>
       <main className="p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-2">
+          <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-800">AI Asset Inventory</h1>
             <div className="flex space-x-2">
                <button 
@@ -98,10 +123,42 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="text-center text-sm text-gray-600 mb-4 h-5">
-            {syncMessage && <span>{syncMessage}</span>}
-          </div>
+          {syncMessage && <div className="text-center text-sm text-gray-600 mb-4 h-5"><span>{syncMessage}</span></div>}
           
+          {/* --- NEW: Search and filter UI --- */}
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-1">
+              <input
+                type="text"
+                placeholder="Search by name or purpose..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="All">All Statuses</option>
+                {Object.values(AssetStatusEnum).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="md:col-span-1">
+              <select
+                value={riskFilter}
+                onChange={(e) => setRiskFilter(e.target.value as any)}
+                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="All">All Risk Levels</option>
+                {Object.values(RiskLevelEnum).map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+          </div>
+          {/* --------------------------------- */}
+
           <div className="bg-white shadow-md rounded-lg overflow-hidden">
             {isLoading ? (
               <p className="text-center p-8 text-gray-500">Loading assets...</p>
@@ -113,13 +170,15 @@ export default function HomePage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Level</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Registered</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {assets.map((asset) => (
+                  {/* --- UPDATE: Render the filtered assets --- */}
+                  {filteredAssets.map((asset) => (
                     <tr key={asset.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link href={`/assets/${asset.id}`} className="hover:underline">
@@ -128,6 +187,9 @@ export default function HomePage() {
                         </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{asset.owner}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                       {asset.vendor?.name ? asset.vendor.name : 'Internal'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorMap[asset.status]}`}>{asset.status}</span>
                       </td>
@@ -154,4 +216,3 @@ export default function HomePage() {
     </>
   );
 }
-

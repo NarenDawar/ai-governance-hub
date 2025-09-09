@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 // A simple type definition for the frontend
@@ -9,6 +10,12 @@ interface Vendor {
   website: string;
   status: string;
 }
+
+const statusColorMap: { [key: string]: string } = { 
+  Active: 'bg-green-100 text-green-800', 
+  InReview: 'bg-yellow-100 text-yellow-800', 
+  Terminated: 'bg-red-100 text-red-800' 
+};
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -87,13 +94,21 @@ export default function VendorsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {vendors.map((vendor) => (
                     <tr key={vendor.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{vendor.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <Link href={`/vendors/${vendor.id}`} className="text-blue-600 hover:underline">
+                          {vendor.name}
+                        </Link>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                           {vendor.website}
                         </a>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{vendor.status}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorMap[vendor.status] || 'bg-gray-100 text-gray-800'}`}>
+                          {vendor.status}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       data: {
         name,
         website,
+        status: 'Active',
       },
     });
 
