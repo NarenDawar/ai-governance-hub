@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../../../../lib/auth';
 
 /**
  * Handles GET requests to /api/assets/[assetId]/auditlog
@@ -10,7 +12,24 @@ export async function GET(
   { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const { assetId } = await params;
+
+    // First verify the asset belongs to the user's organization
+    const asset = await prisma.aIAsset.findFirst({
+      where: {
+        id: assetId,
+        organizationId: session.user.organizationId,
+      },
+    });
+
+    if (!asset) {
+      return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
+    }
 
     const auditLogs = await prisma.auditLog.findMany({
       where: {

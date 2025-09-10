@@ -7,6 +7,31 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// --- NEW MODEL ---
+model Organization {
+  id          String    @id @default(cuid())
+  name        String
+  inviteCode  String    @unique @default(cuid())
+  users       User[]
+  aiAssets    AIAsset[]
+  vendors     Vendor[]
+  templates   AssessmentTemplate[]
+}
+
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  // --- MODIFIED: Link User to an Organization ---
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+}
+
 model AIAsset {
   id                 String       @id @default(cuid())
   discoveredId       String?      @unique
@@ -21,15 +46,34 @@ model AIAsset {
   vendor             Vendor?      @relation(fields: [vendorId], references: [id])
   assessments        Assessment[]
   auditLogs          AuditLog[]
+  // --- ADDED: Link AIAsset to an Organization ---
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Vendor {
   id        String       @id @default(cuid())
-  name      String       @unique
+  name      String
   website   String
   status    VendorStatus @default(Active)
-  // --- THIS IS THE CORRECTED RELATION FIELD ---
   aiAssets  AIAsset[]
+  // --- ADDED: Link Vendor to an Organization ---
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // --- ADDED: Make vendor names unique within an organization ---
+  @@unique([name, organizationId])
+}
+
+model AssessmentTemplate {
+  id        String @id @default(cuid())
+  name      String
+  questions Json
+  createdAt DateTime @default(now())
+  // --- ADDED: Link Template to an Organization ---
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // --- ADDED: Make template names unique within an organization ---
+  @@unique([name, organizationId])
 }
 
 model Assessment {
@@ -43,13 +87,6 @@ model Assessment {
   asset     AIAsset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
 }
 
-model AssessmentTemplate {
-  id        String @id @default(cuid())
-  name      String @unique
-  questions Json
-  createdAt DateTime @default(now())
-}
-
 model AuditLog {
   id        String     @id @default(cuid())
   action    ActionType
@@ -61,7 +98,6 @@ model AuditLog {
   user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
-// --- AUTHENTICATION MODELS REQUIRED BY NEXT-AUTH ---
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -76,7 +112,6 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@unique([provider, providerAccountId])
 }
 
@@ -88,53 +123,38 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model User {
-  id            String       @id @default(cuid())
-  name          String?
-  email         String?      @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  auditLogs     AuditLog[]
-}
-
 model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
-
   @@unique([identifier, token])
 }
 
 // --- ENUMS ---
+// --- CORRECTED SYNTAX ---
 enum VendorStatus {
   Active
   InReview
   Terminated
 }
-
 enum AssetStatus {
   Proposed
   InReview
   Active
   Retired
 }
-
 enum RiskLevel {
   Low
   Medium
   High
   Severe
 }
-
 enum AssessmentStatus {
   NotStarted
   InProgress
   Completed
   Archived
 }
-
 enum ActionType {
   ASSET_CREATED
   ASSET_UPDATED

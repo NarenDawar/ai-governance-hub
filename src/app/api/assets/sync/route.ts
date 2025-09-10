@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import prisma from '../../../../lib/prisma';
-import { authOptions } from '../../../../lib/auth'; // Corrected import path
+import { authOptions } from '../../../../lib/auth';
 import { createAuditLog } from '../../../../lib/auditLog';
 import { ActionType, RiskLevel } from '@prisma/client';
 
@@ -19,7 +19,6 @@ const MOCK_DISCOVERED_ASSETS = [
     owner: 'Unassigned (Discovered)',
     businessPurpose: 'Automatically discovered from AWS SageMaker.'
   },
-  // This asset already exists in our mock data, so it should be skipped.
   {
     discoveredId: 'pre-existing-id-for-churn-model',
     name: 'Customer Churn Prediction Model',
@@ -34,29 +33,30 @@ const MOCK_DISCOVERED_ASSETS = [
  */
 export async function POST() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // --- MODIFIED: Check for organizationId as well ---
+  if (!session?.user?.id || !session.user.organizationId) {
+    return NextResponse.json({ error: 'User must belong to an organization to sync assets.' }, { status: 403 });
   }
 
   try {
+    // --- MODIFIED: Add organizationId to each new asset ---
     const assetsToCreate = MOCK_DISCOVERED_ASSETS.map(asset => ({
       ...asset,
-      riskClassification: RiskLevel.Low, // Discovered assets default to Low risk
+      riskClassification: RiskLevel.Low,
+      organizationId: session.user.organizationId as string, // Add the organizationId
     }));
+    // --------------------------------------------------------
 
-    // Use createMany with skipDuplicates to only insert new records
-    // This relies on the `discoveredId` field being unique.
     const result = await prisma.aIAsset.createMany({
       data: assetsToCreate,
       skipDuplicates: true,
     });
 
-    // Log the sync action using the new object-based format
     if (result.count > 0) {
       await createAuditLog(
         ActionType.AUTO_DISCOVERY_COMPLETED,
         `Auto-discovery sync completed. Found and registered ${result.count} new asset(s).`,
-        null, // No specific assetId for this global action
+        null,
         session.user.id
       );
     }
@@ -71,4 +71,3 @@ export async function POST() {
     return NextResponse.json({ error: "Unable to sync assets." }, { status: 500 });
   }
 }
-

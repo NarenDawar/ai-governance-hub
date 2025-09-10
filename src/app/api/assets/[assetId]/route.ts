@@ -13,9 +13,17 @@ export async function GET(
   { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const { assetId } = await params;
-    const asset = await prisma.aIAsset.findUnique({
-      where: { id: assetId },
+    const asset = await prisma.aIAsset.findFirst({
+      where: { 
+        id: assetId,
+        organizationId: session.user.organizationId,
+      },
       include: {
         vendor: {
           select: {
@@ -44,7 +52,7 @@ export async function PATCH(
   // Get the current user's session
   const session = await getServerSession(authOptions);
   // If no session or user ID, deny access
-  if (!session || !session.user?.id) {
+  if (!session || !session.user?.id || !session.user?.organizationId) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
@@ -60,8 +68,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status or risk value provided.' }, { status: 400 });
     }
 
-    // Fetch the asset's current state BEFORE updating for a more detailed log
-    const originalAsset = await prisma.aIAsset.findUnique({ where: { id: assetId } });
+    // Fetch the asset's current state BEFORE updating for a more detailed log and verify organization access
+    const originalAsset = await prisma.aIAsset.findFirst({ 
+      where: { 
+        id: assetId,
+        organizationId: session.user.organizationId,
+      },
+    });
+
+    if (!originalAsset) {
+      return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
+    }
 
     const updatedAsset = await prisma.aIAsset.update({
       where: { id: assetId },

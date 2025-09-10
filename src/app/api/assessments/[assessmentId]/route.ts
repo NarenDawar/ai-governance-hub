@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { AssessmentStatus, ActionType } from '@prisma/client';
-import { createAuditLog } from '../../../../lib/auditLog'; // Import the logging service
+import { createAuditLog } from '../../../../lib/auditLog';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../../../lib/auth';
 
 /**
  * Handles GET requests to /api/assessments/[assessmentId]
@@ -12,9 +14,19 @@ export async function GET(
   { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const { assessmentId } = await params;
-    const assessment = await prisma.assessment.findUnique({
-      where: { id: assessmentId },
+    const assessment = await prisma.assessment.findFirst({
+      where: { 
+        id: assessmentId,
+        asset: {
+          organizationId: session.user.organizationId,
+        },
+      },
     });
 
     if (!assessment) {
@@ -36,12 +48,24 @@ export async function PATCH(
   { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { questions, status } = body;
     const { assessmentId } = await params;
 
-    // Fetch the original assessment to compare status changes
-    const originalAssessment = await prisma.assessment.findUnique({ where: { id: assessmentId } });
+    // Fetch the original assessment to compare status changes and verify organization access
+    const originalAssessment = await prisma.assessment.findFirst({ 
+      where: { 
+        id: assessmentId,
+        asset: {
+          organizationId: session.user.organizationId,
+        },
+      },
+    });
     if (!originalAssessment) {
         return NextResponse.json({ error: 'Assessment not found.' }, { status: 404 });
     }
@@ -65,7 +89,7 @@ export async function PATCH(
         action, 
         `Assessment status for "${updatedAssessment.name}" changed to ${status}.`,
         updatedAssessment.assetId,
-        null // No user ID available in this context
+        session.user.id
       );
     }
     // ---------------------------------------------------

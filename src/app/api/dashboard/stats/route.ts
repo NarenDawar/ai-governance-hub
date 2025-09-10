@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { RiskLevel, AssetStatus, AssessmentStatus } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../../../lib/auth';
 
 /**
  * Handles GET requests to /api/dashboard/stats
@@ -8,11 +10,19 @@ import { RiskLevel, AssetStatus, AssessmentStatus } from '@prisma/client';
  */
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     // --- Asset Statistics ---
 
     // Count assets by risk level
     const assetsByRisk = await prisma.aIAsset.groupBy({
       by: ['riskClassification'],
+      where: {
+        organizationId: session.user.organizationId,
+      },
       _count: {
         riskClassification: true,
       },
@@ -21,24 +31,42 @@ export async function GET() {
     // Count assets by status
     const assetsByStatus = await prisma.aIAsset.groupBy({
         by: ['status'],
+        where: {
+          organizationId: session.user.organizationId,
+        },
         _count: {
             status: true,
         },
     });
 
-    const totalAssets = await prisma.aIAsset.count();
+    const totalAssets = await prisma.aIAsset.count({
+      where: {
+        organizationId: session.user.organizationId,
+      },
+    });
 
     // --- Assessment Statistics ---
 
     // Count assessments by status
     const assessmentsByStatus = await prisma.assessment.groupBy({
         by: ['status'],
+        where: {
+          asset: {
+            organizationId: session.user.organizationId,
+          },
+        },
         _count: {
             status: true,
         }
     });
 
-    const totalAssessments = await prisma.assessment.count();
+    const totalAssessments = await prisma.assessment.count({
+      where: {
+        asset: {
+          organizationId: session.user.organizationId,
+        },
+      },
+    });
     
     // --- Format Data for Frontend ---
 

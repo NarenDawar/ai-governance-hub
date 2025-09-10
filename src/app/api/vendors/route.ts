@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../../lib/auth';
 
 /**
  * Handles GET requests to /api/vendors
@@ -7,7 +9,15 @@ import prisma from '../../../lib/prisma';
  */
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const vendors = await prisma.vendor.findMany({
+      where: {
+        organizationId: session.user.organizationId,
+      },
       orderBy: {
         name: 'asc',
       },
@@ -25,6 +35,11 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, website } = body;
 
@@ -36,7 +51,7 @@ export async function POST(request: Request) {
       data: {
         name,
         website,
-        status: 'Active',
+        organizationId: session.user.organizationId,
       },
     });
 

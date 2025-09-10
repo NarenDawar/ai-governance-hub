@@ -1,8 +1,6 @@
-// src/lib/auth.ts
-
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import prisma from "./prisma"; // Note the corrected path to prisma
+import prisma from "./prisma";
 import { type Adapter } from "next-auth/adapters";
 
 export const authOptions = {
@@ -17,15 +15,28 @@ export const authOptions = {
     strategy: "jwt" as const,
   },
   callbacks: {
-    async jwt({ token, user }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-      if (user) {
-        token.id = user.id;
+    // CORRECTED: This callback now ensures the token is always up-to-date
+    async jwt({ token }: any) {
+      if (!token.email) {
+        return token;
       }
+      // Fetch the most recent user data from the database
+      const dbUser = await prisma.user.findUnique({
+        where: { email: token.email },
+      });
+
+      // If user exists, update the token with the latest info
+      if (dbUser) {
+        token.id = dbUser.id;
+        token.organizationId = dbUser.organizationId;
+      }
+      
       return token;
     },
-    async session({ session, token }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: any) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.organizationId = token.organizationId as string | null;
       }
       return session;
     },

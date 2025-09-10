@@ -14,6 +14,27 @@ CREATE TYPE "public"."AssessmentStatus" AS ENUM ('NotStarted', 'InProgress', 'Co
 CREATE TYPE "public"."ActionType" AS ENUM ('ASSET_CREATED', 'ASSET_UPDATED', 'ASSESSMENT_STARTED', 'ASSESSMENT_UPDATED', 'ASSESSMENT_COMPLETED', 'VENDOR_CREATED', 'VENDOR_LINKED_TO_ASSET', 'AUTO_DISCOVERY_COMPLETED');
 
 -- CreateTable
+CREATE TABLE "public"."Organization" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "inviteCode" TEXT NOT NULL,
+
+    CONSTRAINT "Organization_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."User" (
+    "id" TEXT NOT NULL,
+    "name" TEXT,
+    "email" TEXT,
+    "emailVerified" TIMESTAMP(3),
+    "image" TEXT,
+    "organizationId" TEXT,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."AIAsset" (
     "id" TEXT NOT NULL,
     "discoveredId" TEXT,
@@ -25,6 +46,7 @@ CREATE TABLE "public"."AIAsset" (
     "dateRegistered" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "vendorId" TEXT,
+    "organizationId" TEXT NOT NULL,
 
     CONSTRAINT "AIAsset_pkey" PRIMARY KEY ("id")
 );
@@ -35,8 +57,20 @@ CREATE TABLE "public"."Vendor" (
     "name" TEXT NOT NULL,
     "website" TEXT NOT NULL,
     "status" "public"."VendorStatus" NOT NULL DEFAULT 'Active',
+    "organizationId" TEXT NOT NULL,
 
     CONSTRAINT "Vendor_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."AssessmentTemplate" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "questions" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "organizationId" TEXT NOT NULL,
+
+    CONSTRAINT "AssessmentTemplate_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -93,17 +127,6 @@ CREATE TABLE "public"."Session" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."User" (
-    "id" TEXT NOT NULL,
-    "name" TEXT,
-    "email" TEXT,
-    "emailVerified" TIMESTAMP(3),
-    "image" TEXT,
-
-    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "public"."VerificationToken" (
     "identifier" TEXT NOT NULL,
     "token" TEXT NOT NULL,
@@ -111,10 +134,19 @@ CREATE TABLE "public"."VerificationToken" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Organization_inviteCode_key" ON "public"."Organization"("inviteCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "AIAsset_discoveredId_key" ON "public"."AIAsset"("discoveredId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Vendor_name_key" ON "public"."Vendor"("name");
+CREATE UNIQUE INDEX "Vendor_name_organizationId_key" ON "public"."Vendor"("name", "organizationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AssessmentTemplate_name_organizationId_key" ON "public"."AssessmentTemplate"("name", "organizationId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "public"."Account"("provider", "providerAccountId");
@@ -123,16 +155,25 @@ CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "public"."Accoun
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "public"."Session"("sessionToken");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
-
--- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_token_key" ON "public"."VerificationToken"("token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "public"."VerificationToken"("identifier", "token");
 
 -- AddForeignKey
+ALTER TABLE "public"."User" ADD CONSTRAINT "User_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."AIAsset" ADD CONSTRAINT "AIAsset_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "public"."Vendor"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AIAsset" ADD CONSTRAINT "AIAsset_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Vendor" ADD CONSTRAINT "Vendor_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AssessmentTemplate" ADD CONSTRAINT "AssessmentTemplate_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Assessment" ADD CONSTRAINT "Assessment_assetId_fkey" FOREIGN KEY ("assetId") REFERENCES "public"."AIAsset"("id") ON DELETE CASCADE ON UPDATE CASCADE;

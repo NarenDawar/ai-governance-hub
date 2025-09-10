@@ -12,9 +12,17 @@ export async function GET(
   { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
-    const { vendorId } = await params; // CORRECTED: Added 'await' here
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const { vendorId } = await params;
     const vendor = await prisma.vendor.findUnique({
-      where: { id: vendorId },
+      where: { 
+        id: vendorId,
+        organizationId: session.user.organizationId,
+      },
       include: {
         aiAssets: {
           orderBy: {
@@ -45,28 +53,31 @@ export async function PATCH(
   { params }: { params: Promise<{ vendorId: string }> }
 ) {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.organizationId) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     try {
-        const { vendorId } = await params; // CORRECTED: Added 'await' here
+        const { vendorId } = await params;
         const body = await request.json();
-        const { status } = body;
+        const { name, website } = body;
 
-        if (!status) {
-            return NextResponse.json({ error: 'Status is required.' }, { status: 400 });
+        if (!name || !website) {
+            return NextResponse.json({ error: 'Name and website are required.' }, { status: 400 });
         }
         
         const updatedVendor = await prisma.vendor.update({
-            where: { id: vendorId },
-            data: { status },
+            where: { 
+                id: vendorId,
+                organizationId: session.user.organizationId,
+            },
+            data: { name, website },
         });
 
         return NextResponse.json(updatedVendor, { status: 200 });
 
     } catch (error) {
-        console.error('Failed to update vendor status:', error);
+        console.error('Failed to update vendor:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
