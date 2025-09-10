@@ -16,7 +16,7 @@ export const authOptions = {
   },
   callbacks: {
     // CORRECTED: This callback now ensures the token is always up-to-date
-    async jwt({ token }: any) {
+    async jwt({ token }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       if (!token.email) {
         return token;
       }
@@ -33,7 +33,7 @@ export const authOptions = {
       
       return token;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       if (session.user) {
         session.user.id = token.id as string;
         session.user.organizationId = token.organizationId as string | null;
