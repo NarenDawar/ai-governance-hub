@@ -22,8 +22,11 @@ export default function AuthButton() {
             )}
             <span className="text-sm font-medium text-gray-700">{session.user?.name}</span>
         </div>
-        <button 
-          onClick={() => signOut()} 
+        <button
+          // --- THIS IS THE KEY CHANGE ---
+          // Tell NextAuth to redirect to the landing page after signing out
+          onClick={() => signOut({ callbackUrl: '/' })}
+          // -----------------------------
           className="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 transition text-sm"
         >
           Sign Out
@@ -35,14 +38,10 @@ export default function AuthButton() {
   // If the user is not signed in, show a sign-in button
   return (
     <button 
-      // --- THIS IS THE KEY CHANGE ---
-      // Tell NextAuth to redirect to the dashboard after a successful sign-in
-      onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-      // -----------------------------
+      onClick={() => signIn('google', { callbackUrl: '/inventory' })}
       className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition text-sm"
     >
       Sign In with Google
     </button>
   );
 }
-
