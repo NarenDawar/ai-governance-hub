@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+// REMOVED: Unused 'Link' import
 import { signIn } from 'next-auth/react';
 
 // --- Reusable Feature Component ---
@@ -54,7 +54,8 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold text-center mb-12">A Single Pane of Glass for AI Governance</h2>
             <div className="grid md:grid-cols-3 gap-8">
               <Feature icon="🗂️" title="Centralized AI Inventory">
-                Automatically discover and manually register every AI model and system across your organization. Know exactly what AI you're using, who owns it, and why.
+                {/* FIXED: Replaced you're with you&apos;re */}
+                Automatically discover and manually register every AI model and system across your organization. Know exactly what AI you&apos;re using, who owns it, and why.
               </Feature>
               <Feature icon="⚙️" title="Automated Risk Workflows">
                 Turn policy into process. Our workflow engine triages new AI assets and assigns tailored risk assessments to legal, security, and compliance teams.
