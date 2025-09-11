@@ -21,12 +21,17 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const fetchOrganization = async () => {
+      setIsLoading(true);
       if ((session?.user as any)?.organizationId) { // eslint-disable-line @typescript-eslint/no-explicit-any
         const response = await fetch('/api/organizations/me');
         if (response.ok) {
           const data = await response.json();
           setOrganization(data);
+        } else {
+          setOrganization(null);
         }
+      } else {
+        setOrganization(null);
       }
       setIsLoading(false);
     };
@@ -45,7 +50,7 @@ export default function SettingsPage() {
     const data = await response.json();
     if (response.ok) {
       setMessage(`Organization "${data.name}" created!`);
-      await update(); // This updates the session, triggering the useEffect above
+      await update();
     } else {
       setError(data.error || 'Failed to create organization.');
     }
@@ -63,11 +68,29 @@ export default function SettingsPage() {
     const data = await response.json();
     if (response.ok) {
       setMessage('Successfully joined organization!');
-      await update(); // This updates the session, triggering the useEffect above
+      await update();
     } else {
       setError(data.error || 'Failed to join organization.');
     }
   };
+
+  // --- NEW: Function to handle leaving an organization ---
+  const handleLeaveOrg = async () => {
+    if (!window.confirm('Are you sure you want to leave this organization?')) {
+      return;
+    }
+    setError('');
+    setMessage('');
+    const response = await fetch('/api/organizations/leave', { method: 'POST' });
+    const data = await response.json();
+    if (response.ok) {
+      setMessage('You have successfully left the organization.');
+      await update(); // This will refresh the session and trigger the useEffect
+    } else {
+      setError(data.error || 'Failed to leave organization.');
+    }
+  };
+  // --------------------------------------------------------
   
   if (isLoading || !session) return <div className="p-8">Loading...</div>;
 
@@ -85,6 +108,17 @@ export default function SettingsPage() {
               <div className="mt-2 bg-gray-100 p-3 rounded-md text-center">
                 <p className="text-xl font-mono font-semibold text-gray-800">{organization.inviteCode}</p>
               </div>
+
+              {/* --- NEW: Leave Organization Button --- */}
+              <div className="mt-6 border-t pt-6">
+                <button 
+                  onClick={handleLeaveOrg}
+                  className="w-full bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition"
+                >
+                  Leave Organization
+                </button>
+              </div>
+              {/* ------------------------------------ */}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
