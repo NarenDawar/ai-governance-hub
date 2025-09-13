@@ -110,3 +110,38 @@ export async function PATCH(
   }
 }
 
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ assetId: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !session.user.organizationId) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  try {
+    const { assetId } = await params;
+
+    const asset = await prisma.aIAsset.findFirst({
+      where: { id: assetId, organizationId: session.user.organizationId },
+    });
+
+    if (!asset) {
+      return NextResponse.json({ error: 'Asset not found or permission denied.' }, { status: 404 });
+    }
+
+    await prisma.aIAsset.delete({
+      where: { id: assetId },
+    });
+    
+    // It's good practice to log deletions, but the assetId won't exist anymore.
+    // We log it manually without a direct relation.
+    await createAuditLog('ASSET_DELETED', `Asset "${asset.name}" was deleted.`, null, session.user.id);
+
+    return NextResponse.json({ message: 'Asset deleted successfully.' }, { status: 200 });
+  } catch (error) {
+    console.error('Failed to delete asset:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+

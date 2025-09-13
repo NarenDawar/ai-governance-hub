@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+// CORRECTED: Import useRouter
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AIAsset } from '../../../../lib/types';
 
@@ -21,6 +22,7 @@ const statusColorMap: { [key: string]: string } = {
 
 export default function VendorDetailPage() {
   const params = useParams();
+  const router = useRouter(); // Initialize router
   const vendorId = params.vendorId as string;
 
   const [vendor, setVendor] = useState<VendorDetails | null>(null);
@@ -28,6 +30,7 @@ export default function VendorDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // ... (existing useEffect remains the same)
     if (!vendorId) return;
 
     const fetchVendorDetails = async () => {
@@ -46,10 +49,23 @@ export default function VendorDetailPage() {
     fetchVendorDetails();
   }, [vendorId]);
 
+  // NEW: Function to handle vendor deletion
+  const handleDeleteVendor = async () => {
+    if (window.confirm('Are you sure you want to permanently delete this vendor? This action cannot be undone.')) {
+      const response = await fetch(`/api/vendors/${vendorId}`, { method: 'DELETE' });
+      if (response.ok) {
+        router.push('/vendors'); // Redirect to vendors list after deletion
+      } else {
+        const data = await response.json();
+        alert(`Failed to delete vendor: ${data.error}`);
+      }
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8">Loading vendor details...</div>;
   }
-
+  // ... (error and not found checks remain the same)
   if (error) {
     return <div className="p-8 text-red-500">{error}</div>;
   }
@@ -61,11 +77,19 @@ export default function VendorDetailPage() {
   return (
     <main className="p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center">
           <Link href="/vendors" className="text-blue-600 hover:underline">&larr; Back to All Vendors</Link>
+          {/* NEW: Delete button */}
+          <button 
+            onClick={handleDeleteVendor}
+            className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition text-sm"
+          >
+            Delete Vendor
+          </button>
         </div>
         
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          {/* ... (rest of the JSX is unchanged) ... */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-start">
               <div>

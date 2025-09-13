@@ -38,7 +38,7 @@ export default function AuthButton() {
   // If the user is not signed in, show a sign-in button
   return (
     <button 
-      onClick={() => signIn('google', { callbackUrl: '/inventory' })}
+      onClick={() => signIn('google', { callbackUrl: '/inventory', prompt: 'select_account' })}
       className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition text-sm"
     >
       Sign In with Google

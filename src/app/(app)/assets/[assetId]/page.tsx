@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   AIAsset, 
@@ -33,6 +33,7 @@ const DetailItem = ({ label, value }: { label: string; value: React.ReactNode })
 export default function AssetDetailPage() {
   const params = useParams();
   const assetId = params.assetId as string;
+  const router = useRouter(); // Initialize the router
 
   const [asset, setAsset] = useState<AIAsset | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +113,18 @@ export default function AssetDetailPage() {
       console.error('Error saving asset:', err);
     }
   };
+
+  const handleDeleteAsset = async () => {
+    if (window.confirm('Are you sure you want to permanently delete this asset? This action cannot be undone.')) {
+      const response = await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
+      if (response.ok) {
+        router.push('/inventory'); // Redirect to inventory after deletion
+      } else {
+        const data = await response.json();
+        alert(`Failed to delete asset: ${data.error}`);
+      }
+    }
+  };
   
   const handleCancel = () => {
     // ... (existing handleCancel logic remains the same)
@@ -171,7 +184,7 @@ export default function AssetDetailPage() {
         <div className="max-w-4xl mx-auto">
           {/* ... (Existing Asset Details JSX) ... */}
           <div className="mb-6">
-            <Link href="/" className="text-blue-600 hover:underline">&larr; Back to Inventory</Link>
+            <Link href="/inventory" className="text-blue-600 hover:underline">&larr; Back to Inventory</Link>
           </div>
           
           <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -185,6 +198,9 @@ export default function AssetDetailPage() {
                   Edit
                 </button>
               )}
+              <button onClick={handleDeleteAsset} className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition">
+                Delete
+              </button>
             </div>
             
             <div className="p-6">

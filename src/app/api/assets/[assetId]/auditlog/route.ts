@@ -3,10 +3,6 @@ import prisma from '../../../../../lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../../../lib/auth';
 
-/**
- * Handles GET requests to /api/assets/[assetId]/auditlog
- * Fetches all audit log entries for a specific AI asset.
- */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ assetId: string }> }
@@ -19,7 +15,6 @@ export async function GET(
 
     const { assetId } = await params;
 
-    // First verify the asset belongs to the user's organization
     const asset = await prisma.aIAsset.findFirst({
       where: {
         id: assetId,
@@ -36,8 +31,19 @@ export async function GET(
         assetId: assetId,
       },
       orderBy: {
-        createdAt: 'desc', // Show the most recent events first
+        createdAt: 'desc',
       },
+      // --- THIS IS THE FIX ---
+      // Include the related user's name and email in the query
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+      // ------------------------
     });
 
     return NextResponse.json(auditLogs);
@@ -46,4 +52,3 @@ export async function GET(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-

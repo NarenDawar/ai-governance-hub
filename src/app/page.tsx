@@ -21,7 +21,7 @@ export default function LandingPage() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-blue-700">SafeScale AI</h1>
           <button
-            onClick={() => signIn('google', { callbackUrl: '/inventory' })}
+            onClick={() => signIn('google', { callbackUrl: '/inventory', prompt: 'select_account' })}
             className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition"
           >
             Sign In
@@ -40,7 +40,7 @@ export default function LandingPage() {
               SafeScale AI is the centralized platform for managing AI governance, risk, and compliance. Get a single source of truth for all your AI assets, automate risk assessments, and scale your AI initiatives with confidence.
             </p>
             <button
-              onClick={() => signIn('google', { callbackUrl: '/inventory' })}
+              onClick={() => signIn('google', { callbackUrl: '/inventory', prompt: 'select_account' })}
               className="mt-8 bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition text-lg"
             >
               Get Started for Free
@@ -75,7 +75,7 @@ export default function LandingPage() {
               Take control of your AI ecosystem. Sign up today and get the visibility you need to innovate responsibly.
             </p>
             <button
-              onClick={() => signIn('google', { callbackUrl: '/inventory' })}
+              onClick={() => signIn('google', { callbackUrl: '/inventory', prompt: 'select_account' })}
               className="mt-8 bg-white text-blue-700 font-bold py-3 px-8 rounded-lg hover:bg-gray-200 transition text-lg"
             >
               Sign Up Now
