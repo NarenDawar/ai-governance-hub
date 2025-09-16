@@ -2,6 +2,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "./prisma";
 import { type Adapter } from "next-auth/adapters";
+import { Role } from "@prisma/client"; // Import the Role enum
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -16,20 +17,18 @@ export const authOptions = {
     strategy: "jwt" as const,
   },
   callbacks: {
-    // CORRECTED: This callback now ensures the token is always up-to-date
     async jwt({ token }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       if (!token.email) {
         return token;
       }
-      // Fetch the most recent user data from the database
       const dbUser = await prisma.user.findUnique({
         where: { email: token.email },
       });
 
-      // If user exists, update the token with the latest info
       if (dbUser) {
         token.id = dbUser.id;
         token.organizationId = dbUser.organizationId;
+        token.role = dbUser.role; // <-- ADD THIS LINE
       }
       
       return token;
@@ -38,6 +37,7 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.organizationId = token.organizationId as string | null;
+        session.user.role = token.role as Role; // <-- ADD THIS LINE
       }
       return session;
     },

@@ -1,24 +1,30 @@
 import { withAuth, NextRequestWithAuth } from "next-auth/middleware";
 import { NextResponse } from 'next/server';
+import { Role } from "@prisma/client"; // Import the Role enum
 
 export default withAuth(
-  // `withAuth` augments your `Request` with the user's token.
   function middleware(request: NextRequestWithAuth) {
     const { token } = request.nextauth;
     const { pathname } = request.nextUrl;
     
+    // --- ONBOARDING LOGIC (No changes) ---
     const userIsOnboarding = !token?.organizationId;
     const isOnboardingPage = pathname.startsWith('/welcome');
 
-    // If the user has no organization and is NOT on the welcome page,
-    // redirect them to the welcome page.
     if (userIsOnboarding && !isOnboardingPage) {
       return NextResponse.redirect(new URL('/welcome', request.url));
     }
     
-    // If the user HAS an organization but is trying to access the welcome page,
-    // redirect them to the main app (inventory).
     if (!userIsOnboarding && isOnboardingPage) {
+      return NextResponse.redirect(new URL('/inventory', request.url));
+    }
+
+    // --- NEW: RBAC LOGIC ---
+    const isAdminRoute = pathname.startsWith('/settings');
+    const userIsAdmin = token?.role === Role.ADMIN;
+
+    // If a non-admin tries to access an admin-only route, redirect them.
+    if (isAdminRoute && !userIsAdmin) {
       return NextResponse.redirect(new URL('/inventory', request.url));
     }
   },
@@ -32,15 +38,14 @@ export default withAuth(
   }
 );
 
-// This config specifies which routes are protected by the middleware.
 export const config = { 
   matcher: [
     "/inventory/:path*",
     "/dashboard/:path*",
     "/vendors/:path*", 
-    "/settings/:path*",
+    "/settings/:path*", // This already correctly includes the templates route
     "/assets/:path*", 
     "/assessments/:path*",
-    "/welcome", // Protect the welcome page too
+    "/welcome",
   ] 
 };

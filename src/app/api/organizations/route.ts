@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/auth';
 import prisma from '../../../lib/prisma';
+import { Role } from '@prisma/client'; // Import the Role enum
 
 // POST /api/organizations - Create a new organization
 export async function POST(request: Request) {
@@ -21,12 +22,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Organization name is required.' }, { status: 400 });
     }
 
-    const newOrganization = await prisma.organization.create({
-      data: {
-        name: name,
-        users: { connect: { id: session.user.id } },
-      },
+    // --- MODIFIED: Use a transaction to create org and make user an admin ---
+    const newOrganization = await prisma.$transaction(async (tx) => {
+      const org = await tx.organization.create({
+        data: { name },
+      });
+
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: {
+          organizationId: org.id,
+          role: Role.ADMIN, // Promote the creator to ADMIN
+        },
+      });
+
+      return org;
     });
+    // --------------------------------------------------------------------
 
     return NextResponse.json(newOrganization, { status: 201 });
   } catch (error) {

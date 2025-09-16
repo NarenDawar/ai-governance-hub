@@ -13,10 +13,6 @@ export const metadata: Metadata = {
   },
 };
 
-// a comment
-
-// This is the root layout for the entire application.
-// Its only job is to set up the HTML shell and the session provider.
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,4 +26,3 @@ export default function RootLayout({
     </html>
   );
 }
-

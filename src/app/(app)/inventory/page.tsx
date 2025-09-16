@@ -8,6 +8,21 @@ import RegisterAssetForm from '../../../components/RegisterAssetForm';
 const statusColorMap: { [key in AssetStatus]: string } = { Active: 'bg-green-100 text-green-800', InReview: 'bg-yellow-100 text-yellow-800', Proposed: 'bg-blue-100 text-blue-800', Retired: 'bg-gray-100 text-gray-800' };
 const riskColorMap: { [key in RiskLevel]: string } = { Low: 'bg-gray-100 text-gray-800', Medium: 'bg-yellow-100 text-yellow-800', High: 'bg-orange-100 text-orange-800', Severe: 'bg-red-100 text-red-800' };
 
+const EmptyState = ({ openModal }: { openModal: () => void }) => (
+  <div className="text-center bg-white p-12 rounded-lg shadow-md">
+    <h3 className="text-xl font-semibold text-gray-800">Your AI Inventory is Empty</h3>
+    <p className="mt-2 text-gray-500 max-w-2xl mx-auto">
+      The inventory is your central registry for all AI models and systems. Get started by registering your first AI asset manually or by syncing with your cloud provider.
+    </p>
+    <button
+      onClick={openModal}
+      className="mt-6 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition"
+    >
+      Register Your First Asset
+    </button>
+  </div>
+);
+
 export default function HomePage() {
   const [assets, setAssets] = useState<AIAsset[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,11 +32,9 @@ export default function HomePage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
 
-  // --- NEW: State for search and filtering ---
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<AssetStatus | 'All'>('All');
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'All'>('All');
-  // -------------------------------------------
 
   useEffect(() => {
     const fetchAssets = async () => {
@@ -40,7 +53,6 @@ export default function HomePage() {
     fetchAssets();
   }, []);
 
-  // --- NEW: Filtering logic ---
   const filteredAssets = useMemo(() => {
     return assets.filter(asset => {
       const matchesSearch = searchTerm === '' || 
@@ -53,7 +65,6 @@ export default function HomePage() {
       return matchesSearch && matchesStatus && matchesRisk;
     });
   }, [assets, searchTerm, statusFilter, riskFilter]);
-  // ----------------------------
 
   const handleSaveAsset = async (data: { 
     name: string; 
@@ -78,7 +89,6 @@ export default function HomePage() {
   };
   
   const handleSync = async () => {
-    // ... (handleSync function remains the same)
     setIsSyncing(true);
     setSyncMessage('');
     try {
@@ -87,7 +97,6 @@ export default function HomePage() {
       if (!response.ok) throw new Error(result.error || 'Sync failed');
       
       setSyncMessage(result.message);
-      // Refetch assets after a successful sync
       const assetResponse = await fetch('/api/assets');
       const data: AIAsset[] = await assetResponse.json();
       setAssets(data);
@@ -125,46 +134,48 @@ export default function HomePage() {
 
           {syncMessage && <div className="text-center text-sm text-gray-600 mb-4 h-5"><span>{syncMessage}</span></div>}
           
-          {/* --- NEW: Search and filter UI --- */}
-          <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-1">
-              <input
-                type="text"
-                placeholder="Search by name or purpose..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
-              />
+          {assets.length > 0 && (
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <input
+                  type="text"
+                  placeholder="Search by name or purpose..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="All">All Statuses</option>
+                  {Object.values(AssetStatusEnum).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="md:col-span-1">
+                <select
+                  value={riskFilter}
+                  onChange={(e) => setRiskFilter(e.target.value as any)}
+                  className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="All">All Risk Levels</option>
+                  {Object.values(RiskLevelEnum).map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
             </div>
-            <div className="md:col-span-1">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
-                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="All">All Statuses</option>
-                {Object.values(AssetStatusEnum).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="md:col-span-1">
-              <select
-                value={riskFilter}
-                onChange={(e) => setRiskFilter(e.target.value as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
-                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="All">All Risk Levels</option>
-                {Object.values(RiskLevelEnum).map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-          </div>
-          {/* --------------------------------- */}
+          )}
 
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            {isLoading ? (
-              <p className="text-center p-8 text-gray-500">Loading assets...</p>
-            ) : error ? (
-              <p className="text-center p-8 text-red-500">{error}</p>
-            ) : (
+          {isLoading ? (
+            <p className="text-center p-8 text-gray-500">Loading assets...</p>
+          ) : error ? (
+            <p className="text-center p-8 text-red-500">{error}</p>
+          ) : assets.length === 0 ? (
+            <EmptyState openModal={() => setIsModalOpen(true)} />
+          ) : (
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -177,7 +188,6 @@ export default function HomePage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {/* --- UPDATE: Render the filtered assets --- */}
                   {filteredAssets.map((asset) => (
                     <tr key={asset.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -203,8 +213,8 @@ export default function HomePage() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </main>
 

@@ -3,17 +3,19 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/auth';
 import prisma from '../../../lib/prisma';
 import { createAuditLog } from '../../../lib/auditLog';
+import { createAdminNotification } from '../../../lib/notifications'; // Import the new function
+import { RiskLevel } from '@prisma/client';
 
-// GET /api/assets - Fetches assets for the user's organization
+// GET /api/assets - (No changes to this function)
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.organizationId) {
-    return NextResponse.json([]); // Return empty array if no org
+    return NextResponse.json([]);
   }
 
   try {
     const assets = await prisma.aIAsset.findMany({
-      where: { organizationId: session.user.organizationId }, // FILTER BY ORG
+      where: { organizationId: session.user.organizationId },
       orderBy: { dateRegistered: 'desc' },
       include: { vendor: { select: { name: true } } }
     });
@@ -24,7 +26,7 @@ export async function GET() {
   }
 }
 
-// POST /api/assets - Creates an asset for the user's organization
+// POST /api/assets - Creates an asset and sends a notification
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.organizationId) {
@@ -41,12 +43,18 @@ export async function POST(request: Request) {
         owner,
         businessPurpose,
         riskClassification,
-        organizationId: session.user.organizationId, // ADD ORG ID
+        organizationId: session.user.organizationId,
         ...(vendorId && { vendor: { connect: { id: vendorId } } }),
       },
     });
 
+    // --- CREATE AUDIT LOG AND NOTIFICATIONS ---
     await createAuditLog('ASSET_CREATED', `Asset "${name}" was created.`, newAsset.id, session.user.id);
+    
+    const notificationMessage = `A new asset, "${name}", was registered with a risk level of ${riskClassification}.`;
+    await createAdminNotification(session.user.organizationId, notificationMessage, newAsset.id);
+    // -----------------------------------------
+
     return NextResponse.json(newAsset, { status: 201 });
   } catch (error) {
     console.error("Failed to create asset:", error);

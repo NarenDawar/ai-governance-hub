@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// CORRECTED: Import useRouter
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { Role } from '@prisma/client';
 import { AIAsset } from '../../../../lib/types';
 
 interface VendorDetails {
@@ -14,23 +15,24 @@ interface VendorDetails {
   aiAssets: AIAsset[];
 }
 
-const statusColorMap: { [key: string]: string } = { 
-  Active: 'bg-green-100 text-green-800', 
-  InReview: 'bg-yellow-100 text-yellow-800', 
-  Terminated: 'bg-red-100 text-red-800' 
+const statusColorMap: { [key: string]: string } = {
+  Active: 'bg-green-100 text-green-800',
+  InReview: 'bg-yellow-100 text-yellow-800',
+  Terminated: 'bg-red-100 text-red-800'
 };
 
 export default function VendorDetailPage() {
   const params = useParams();
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   const vendorId = params.vendorId as string;
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === Role.ADMIN;
 
   const [vendor, setVendor] = useState<VendorDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // ... (existing useEffect remains the same)
     if (!vendorId) return;
 
     const fetchVendorDetails = async () => {
@@ -49,12 +51,11 @@ export default function VendorDetailPage() {
     fetchVendorDetails();
   }, [vendorId]);
 
-  // NEW: Function to handle vendor deletion
   const handleDeleteVendor = async () => {
     if (window.confirm('Are you sure you want to permanently delete this vendor? This action cannot be undone.')) {
       const response = await fetch(`/api/vendors/${vendorId}`, { method: 'DELETE' });
       if (response.ok) {
-        router.push('/vendors'); // Redirect to vendors list after deletion
+        router.push('/vendors');
       } else {
         const data = await response.json();
         alert(`Failed to delete vendor: ${data.error}`);
@@ -65,11 +66,9 @@ export default function VendorDetailPage() {
   if (isLoading) {
     return <div className="p-8">Loading vendor details...</div>;
   }
-  // ... (error and not found checks remain the same)
   if (error) {
     return <div className="p-8 text-red-500">{error}</div>;
   }
-
   if (!vendor) {
     return <div className="p-8">Vendor not found.</div>;
   }
@@ -79,17 +78,17 @@ export default function VendorDetailPage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <Link href="/vendors" className="text-blue-600 hover:underline">&larr; Back to All Vendors</Link>
-          {/* NEW: Delete button */}
-          <button 
-            onClick={handleDeleteVendor}
-            className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition text-sm"
-          >
-            Delete Vendor
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleDeleteVendor}
+              className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition text-sm"
+            >
+              Delete Vendor
+            </button>
+          )}
         </div>
         
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          {/* ... (rest of the JSX is unchanged) ... */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-start">
               <div>

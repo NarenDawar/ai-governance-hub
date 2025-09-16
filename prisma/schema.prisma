@@ -27,9 +27,10 @@ model User {
   accounts      Account[]
   sessions      Session[]
   auditLogs     AuditLog[]
-  // --- MODIFIED: Link User to an Organization ---
+  role          Role         @default(MEMBER)
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
+  notifications  Notification[]
 }
 
 model AIAsset {
@@ -67,6 +68,7 @@ model Vendor {
 model AssessmentTemplate {
   id        String @id @default(cuid())
   name      String
+  description  String
   questions Json
   createdAt DateTime @default(now())
   // --- ADDED: Link Template to an Organization ---
@@ -81,6 +83,7 @@ model Assessment {
   name      String
   status    AssessmentStatus @default(NotStarted)
   questions Json
+  calculatedRiskScore Int?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   assetId   String
@@ -165,4 +168,22 @@ enum ActionType {
   VENDOR_CREATED
   VENDOR_LINKED_TO_ASSET
   AUTO_DISCOVERY_COMPLETED
+}
+
+enum Role {
+  ADMIN   // Can manage users, settings, and billing
+  MEMBER  // Can view and create assets, complete assigned assessments
+}
+
+model Notification {
+id        String   @id @default(cuid())
+message   String
+isRead    Boolean  @default(false)
+createdAt DateTime @default(now())
+
+userId    String
+user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+// Optional link to an asset to make notifications clickable
+assetId   String?
 }

@@ -3,13 +3,15 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  AIAsset, 
+import { useSession } from 'next-auth/react';
+import { Role } from '@prisma/client';
+import {
+  AIAsset,
   Assessment,
   AuditLog,
-  AssetStatus, 
-  RiskLevel, 
-  AssetStatusEnum, 
+  AssetStatus,
+  RiskLevel,
+  AssetStatusEnum,
   RiskLevelEnum,
   AssessmentStatus as AssessmentStatusType
 } from '../../../../lib/types';
@@ -33,7 +35,9 @@ const DetailItem = ({ label, value }: { label: string; value: React.ReactNode })
 export default function AssetDetailPage() {
   const params = useParams();
   const assetId = params.assetId as string;
-  const router = useRouter(); // Initialize the router
+  const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === Role.ADMIN;
 
   const [asset, setAsset] = useState<AIAsset | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +53,6 @@ export default function AssetDetailPage() {
   const [auditLog, setAuditLog] = useState<AuditLog[]>([]);
   const [isLoadingLog, setIsLoadingLog] = useState(true);
 
-  // State for the new "Start Assessment" modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [templates, setTemplates] = useState<AssessmentTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
@@ -58,7 +61,6 @@ export default function AssetDetailPage() {
     if (!assetId) return;
 
     const fetchPageData = async () => {
-      // ... (existing data fetching logic remains the same)
       setIsLoading(true);
       setIsLoadingAssessments(true);
       setIsLoadingLog(true);
@@ -92,7 +94,6 @@ export default function AssetDetailPage() {
   }, [assetId]);
 
   const handleSave = async () => {
-    // ... (existing handleSave logic remains the same)
     if (!asset) return;
     try {
       const response = await fetch(`/api/assets/${assetId}`, {
@@ -118,7 +119,7 @@ export default function AssetDetailPage() {
     if (window.confirm('Are you sure you want to permanently delete this asset? This action cannot be undone.')) {
       const response = await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
       if (response.ok) {
-        router.push('/inventory'); // Redirect to inventory after deletion
+        router.push('/inventory');
       } else {
         const data = await response.json();
         alert(`Failed to delete asset: ${data.error}`);
@@ -127,7 +128,6 @@ export default function AssetDetailPage() {
   };
   
   const handleCancel = () => {
-    // ... (existing handleCancel logic remains the same)
     if (asset) {
       setEditedStatus(asset.status);
       setEditedRisk(asset.riskClassification);
@@ -164,7 +164,6 @@ export default function AssetDetailPage() {
         setIsModalOpen(true);
     } catch (error) {
         console.error(error);
-        // Optionally, show an error to the user
     }
   };
 
@@ -182,7 +181,6 @@ export default function AssetDetailPage() {
     <Fragment>
       <main className="p-8">
         <div className="max-w-4xl mx-auto">
-          {/* ... (Existing Asset Details JSX) ... */}
           <div className="mb-6">
             <Link href="/inventory" className="text-blue-600 hover:underline">&larr; Back to Inventory</Link>
           </div>
@@ -193,22 +191,26 @@ export default function AssetDetailPage() {
                 <h1 className="text-2xl font-bold text-gray-800">{asset.name}</h1>
                 <p className="text-sm text-gray-500 mt-1">{asset.id}</p>
               </div>
-              {!isEditing && (
-                <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">
-                  Edit
-                </button>
+              {isAdmin && (
+                <div className="flex space-x-2">
+                  {!isEditing && (
+                    <button onClick={() => setIsEditing(true)} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                      Edit
+                    </button>
+                  )}
+                  <button onClick={handleDeleteAsset} className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition">
+                    Delete
+                  </button>
+                </div>
               )}
-              <button onClick={handleDeleteAsset} className="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700 transition">
-                Delete
-              </button>
             </div>
             
             <div className="p-6">
               <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
                 <DetailItem label="Owner" value={asset.owner} />
-                <DetailItem 
-                  label="Source" 
-                  value={asset.vendor?.name ? `Vendor: ${asset.vendor.name}` : 'Internal'} 
+                <DetailItem
+                  label="Source"
+                  value={asset.vendor?.name ? `Vendor: ${asset.vendor.name}` : 'Internal'}
                 />
                 {isEditing ? (
                   <div>
@@ -247,7 +249,7 @@ export default function AssetDetailPage() {
           <div className="mt-8 bg-white shadow-md rounded-lg">
              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-800">Compliance & Risk Assessments</h2>
-              <button 
+              <button
                 onClick={openAssessmentModal}
                 className="bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 transition"
               >
@@ -255,7 +257,6 @@ export default function AssetDetailPage() {
               </button>
             </div>
             <div className="p-6">
-              {/* ... (Existing assessment list logic) ... */}
               {isLoadingAssessments ? (
                 <p className="text-gray-500">Loading assessments...</p>
               ) : assessments.length === 0 ? (
@@ -285,7 +286,6 @@ export default function AssetDetailPage() {
           </div>
 
           <div className="mt-8 bg-white shadow-md rounded-lg">
-             {/* ... (Existing Activity Log JSX) ... */}
              <div className="p-6 border-b border-gray-200">
                <h2 className="text-xl font-semibold text-gray-800">Activity</h2>
              </div>
@@ -323,9 +323,21 @@ export default function AssetDetailPage() {
         </div>
       </main>
 
+      {/* --- MODIFIED: Assessment Modal --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md z-50 relative">
+            {/* --- NEW: Close Button --- */}
+            <button 
+              onClick={() => setIsModalOpen(false)} 
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {/* ------------------------- */}
+
             <h2 className="text-xl font-bold text-gray-800 mb-4">Start New Assessment</h2>
             <p className="text-sm text-gray-600 mb-4">Select an assessment template to begin.</p>
             
@@ -333,9 +345,9 @@ export default function AssetDetailPage() {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="template" className="block text-sm font-medium text-gray-700">Template</label>
-                  <select 
-                    id="template" 
-                    value={selectedTemplate} 
+                  <select
+                    id="template"
+                    value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
                   >
@@ -350,7 +362,13 @@ export default function AssetDetailPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-gray-500">No assessment templates found. Please create one first.</p>
+              // --- MODIFIED: Add a cancel button here too ---
+              <div className="text-center">
+                <p className="text-gray-500">No assessment templates found. Please create one first in the Settings.</p>
+                <div className="mt-6 flex justify-end">
+                   <button type="button" onClick={() => setIsModalOpen(false)} className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                </div>
+              </div>
             )}
           </div>
         </div>

@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
-import { AssessmentStatus, ActionType } from '@prisma/client';
+import { AssessmentStatus, ActionType, RiskLevel } from '@prisma/client';
 import { createAuditLog } from '../../../../lib/auditLog';
+import { createAdminNotification } from '../../../../lib/notifications'; // Import the new function
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../../lib/auth';
 
-/**
- * Handles GET requests to /api/assessments/[assessmentId]
- * Fetches a single assessment by its ID.
- */
+// GET function remains unchanged
+
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ assessmentId: string }> }
+  { params }: { params: { assessmentId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { assessmentId } = await params;
+    const { assessmentId } = params;
     const assessment = await prisma.assessment.findFirst({
       where: { 
         id: assessmentId,
@@ -39,13 +38,10 @@ export async function GET(
   }
 }
 
-/**
- * Handles PATCH requests to /api/assessments/[assessmentId]
- * Updates an existing assessment and logs relevant events.
- */
+// PATCH function is updated to send notifications
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ assessmentId: string }> }
+  { params }: { params: { assessmentId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -54,10 +50,9 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { questions, status } = body;
-    const { assessmentId } = await params;
+    const { questions, status, calculatedRiskScore } = body;
+    const { assessmentId } = params;
 
-    // Fetch the original assessment to compare status changes and verify organization access
     const originalAssessment = await prisma.assessment.findFirst({ 
       where: { 
         id: assessmentId,
@@ -65,6 +60,9 @@ export async function PATCH(
           organizationId: session.user.organizationId,
         },
       },
+      include: {
+        asset: true, // Include the asset to get its name
+      }
     });
     if (!originalAssessment) {
         return NextResponse.json({ error: 'Assessment not found.' }, { status: 404 });
@@ -75,12 +73,11 @@ export async function PATCH(
       data: {
         ...(questions && { questions }),
         ...(status && { status }),
+        ...(calculatedRiskScore !== undefined && { calculatedRiskScore }),
       },
     });
 
-    // --- Create an audit log if the status has changed ---
     if (status && status !== originalAssessment.status) {
-      // Determine the correct action type based on the new status
       const action = status === AssessmentStatus.Completed 
         ? ActionType.ASSESSMENT_COMPLETED 
         : ActionType.ASSESSMENT_UPDATED;
@@ -92,7 +89,29 @@ export async function PATCH(
         session.user.id
       );
     }
-    // ---------------------------------------------------
+    
+    if (status === AssessmentStatus.Completed && calculatedRiskScore !== undefined) {
+      let newRiskLevel;
+      if (calculatedRiskScore >= 75) newRiskLevel = RiskLevel.Severe;
+      else if (calculatedRiskScore >= 50) newRiskLevel = RiskLevel.High;
+      else if (calculatedRiskScore >= 25) newRiskLevel = RiskLevel.Medium;
+      else newRiskLevel = RiskLevel.Low;
+
+      // Only update and notify if the risk level has actually changed
+      if (newRiskLevel !== originalAssessment.asset.riskClassification) {
+        await prisma.aIAsset.update({
+          where: { id: updatedAssessment.assetId },
+          data: { riskClassification: newRiskLevel },
+        });
+
+        const auditDetails = `Asset risk level automatically updated to ${newRiskLevel} based on completed assessment score of ${calculatedRiskScore}.`;
+        await createAuditLog('ASSET_UPDATED', auditDetails, updatedAssessment.assetId, session.user.id);
+        
+        // --- CREATE NOTIFICATION ---
+        const notificationMessage = `Risk level for "${originalAssessment.asset.name}" has changed to ${newRiskLevel}.`;
+        await createAdminNotification(session.user.organizationId, notificationMessage, updatedAssessment.assetId);
+      }
+    }
 
     return NextResponse.json(updatedAssessment, { status: 200 });
   } catch (error) {
@@ -100,4 +119,3 @@ export async function PATCH(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-

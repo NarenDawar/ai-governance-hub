@@ -17,6 +17,17 @@ const statusColorMap: { [key: string]: string } = {
   Terminated: 'bg-red-100 text-red-800' 
 };
 
+// --- NEW: Empty State Component ---
+const EmptyState = () => (
+  <div className="text-center bg-white p-12 rounded-lg shadow-md">
+    <h3 className="text-xl font-semibold text-gray-800">No Vendors Found</h3>
+    <p className="mt-2 text-gray-500">
+      You haven't added any third-party vendors yet. Add a vendor to start tracking the AI tools your organization uses from external companies.
+    </p>
+  </div>
+);
+
+
 export default function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,12 +88,13 @@ export default function VendorsPage() {
         {/* Vendor List Column */}
         <div className="lg:col-span-2">
           <h1 className="text-3xl font-bold text-gray-800 mb-6">Vendor Management</h1>
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            {isLoading ? (
-              <p className="p-4 text-center text-gray-500">Loading vendors...</p>
-            ) : error ? (
-              <p className="p-4 text-center text-red-500">{error}</p>
-            ) : (
+          {/* --- MODIFIED: Conditional Rendering for Table or Empty State --- */}
+          {isLoading ? (
+            <p className="p-4 text-center text-gray-500">Loading vendors...</p>
+          ) : error ? (
+            <p className="p-4 text-center text-red-500">{error}</p>
+          ) : vendors.length > 0 ? (
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -113,8 +125,10 @@ export default function VendorsPage() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          ) : (
+            <EmptyState />
+          )}
         </div>
 
         {/* Add New Vendor Form Column */}
