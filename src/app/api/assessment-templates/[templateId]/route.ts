@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../../lib/auth';
@@ -8,7 +8,7 @@ import { authOptions } from '../../../../lib/auth';
  * Fetches a single assessment template by its ID.
  */
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { templateId: string } }
 ) {
   try {
@@ -41,7 +41,7 @@ export async function GET(
  * Updates an entire assessment template.
  */
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { templateId: string } }
 ) {
   try {
@@ -89,7 +89,7 @@ export async function PUT(
  * Deletes an assessment template.
  */
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { templateId: string } }
 ) {
   try {
