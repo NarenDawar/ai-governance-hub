@@ -3,20 +3,19 @@ import prisma from '../../../../lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../../lib/auth';
 
-type RouteContext = {
-  params: {
-    templateId: string;
-  };
-};
-
-export async function GET(request: NextRequest, { params }: RouteContext) {
+// The second argument is a context object containing params.
+// This is the correct way to type it.
+export async function GET(
+  request: NextRequest,
+  context: { params: { templateId: string } }
+) {
+  const { templateId } = context.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { templateId } = params;
     const template = await prisma.assessmentTemplate.findFirst({
       where: {
         id: templateId,
@@ -30,19 +29,22 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json(template);
   } catch (error) {
-    console.error(`Failed to fetch template ${params.templateId}:`, error);
+    console.error(`Failed to fetch template ${templateId}:`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteContext) {
+export async function PUT(
+  request: NextRequest,
+  context: { params: { templateId: string } }
+) {
+  const { templateId } = context.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { templateId } = params;
     const body = await request.json();
     const { name, description, questions } = body;
 
@@ -65,19 +67,21 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json(updatedTemplate);
   } catch (error) {
-    console.error(`Failed to update template ${params.templateId}:`, error);
+    console.error(`Failed to update template ${templateId}:`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { templateId: string } }
+) {
+  const { templateId } = context.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-
-    const { templateId } = params;
     
     const templateToDelete = await prisma.assessmentTemplate.findFirst({
       where: { id: templateId, organizationId: session.user.organizationId },
@@ -94,7 +98,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ message: 'Template deleted successfully' }, { status: 200 });
 
   } catch (error) {
-    console.error(`Failed to delete template ${params.templateId}:`, error);
+    console.error(`Failed to delete template ${templateId}:`, error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
