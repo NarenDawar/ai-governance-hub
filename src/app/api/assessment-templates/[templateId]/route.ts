@@ -3,14 +3,13 @@ import prisma from '../../../../lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../../lib/auth';
 
-/**
- * Handles GET requests to /api/assessment-templates/[templateId]
- * Fetches a single assessment template by its ID.
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { templateId: string } }
-) {
+type RouteContext = {
+  params: {
+    templateId: string;
+  };
+};
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -21,7 +20,7 @@ export async function GET(
     const template = await prisma.assessmentTemplate.findFirst({
       where: {
         id: templateId,
-        organizationId: session.user.organizationId, // Ensure it belongs to the user's org
+        organizationId: session.user.organizationId,
       },
     });
 
@@ -36,14 +35,7 @@ export async function GET(
   }
 }
 
-/**
- * Handles PUT requests to /api/assessment-templates/[templateId]
- * Updates an entire assessment template.
- */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { templateId: string } }
-) {
+export async function PUT(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -54,12 +46,10 @@ export async function PUT(
     const body = await request.json();
     const { name, description, questions } = body;
 
-    // Basic validation
     if (!name || !description || !questions) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
     }
     
-    // Ensure the template belongs to the user's organization before updating
     const existingTemplate = await prisma.assessmentTemplate.findFirst({
       where: { id: templateId, organizationId: session.user.organizationId },
     });
@@ -70,11 +60,7 @@ export async function PUT(
 
     const updatedTemplate = await prisma.assessmentTemplate.update({
       where: { id: templateId },
-      data: {
-        name,
-        description,
-        questions,
-      },
+      data: { name, description, questions },
     });
 
     return NextResponse.json(updatedTemplate);
@@ -84,14 +70,7 @@ export async function PUT(
   }
 }
 
-/**
- * Handles DELETE requests to /api/assessment-templates/[templateId]
- * Deletes an assessment template.
- */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { templateId: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -100,7 +79,6 @@ export async function DELETE(
 
     const { templateId } = params;
     
-    // Ensure the template belongs to the user's organization before deleting
     const templateToDelete = await prisma.assessmentTemplate.findFirst({
       where: { id: templateId, organizationId: session.user.organizationId },
     });
