@@ -22,7 +22,7 @@ const EmptyState = () => (
   <div className="text-center bg-white p-12 rounded-lg shadow-md">
     <h3 className="text-xl font-semibold text-gray-800">No Vendors Found</h3>
     <p className="mt-2 text-gray-500">
-      You haven't added any third-party vendors yet. Add a vendor to start tracking the AI tools your organization uses from external companies.
+      You haven&apos;t added any third-party vendors yet. Add a vendor to start tracking the AI tools your organization uses from external companies.
     </p>
   </div>
 );

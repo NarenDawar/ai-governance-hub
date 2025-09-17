@@ -13,7 +13,7 @@ const EmptyState = () => (
   <div className="text-center bg-white p-12 rounded-lg shadow-md">
     <h3 className="text-xl font-semibold text-gray-800">No Templates Created Yet</h3>
     <p className="mt-2 text-gray-500">
-      Assessment templates are the reusable questionnaires you'll use to conduct risk assessments on your AI assets. Create your first template to get started.
+      Assessment templates are the reusable questionnaires you&apos;ll use to conduct risk assessments on your AI assets. Create your first template to get started.
     </p>
   </div>
 );

@@ -148,7 +148,7 @@ export default function HomePage() {
               <div className="md:col-span-1">
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  onChange={(e) => setStatusFilter(e.target.value as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
                   className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="All">All Statuses</option>
@@ -158,7 +158,7 @@ export default function HomePage() {
               <div className="md:col-span-1">
                 <select
                   value={riskFilter}
-                  onChange={(e) => setRiskFilter(e.target.value as any)}
+                  onChange={(e) => setRiskFilter(e.target.value as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
                   className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="All">All Risk Levels</option>

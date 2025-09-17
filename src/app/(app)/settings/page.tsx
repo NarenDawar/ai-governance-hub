@@ -34,7 +34,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const fetchOrganization = async () => {
-      if ((session?.user as any)?.organizationId) {
+      if ((session?.user as any)?.organizationId) { // eslint-disable-line @typescript-eslint/no-explicit-any
         const response = await fetch('/api/organizations/me');
         if (response.ok) {
           const data = await response.json();
