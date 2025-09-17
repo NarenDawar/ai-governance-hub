@@ -6,8 +6,8 @@ import SessionProvider from "./SessionProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Governance & Compliance Hub",
-  description: "A centralized system for managing AI governance, risk, and compliance.",
+  title: 'SafeScale AI | The AI Governance & Compliance Platform',
+  description: 'A centralized platform for managing AI governance, risk, and compliance. Get a single source of truth for all your AI assets and automate risk assessments.',
   icons: {
     icon: '/favicon.ico',
   },

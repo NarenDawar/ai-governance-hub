@@ -2,12 +2,7 @@
 
 // REMOVED: Unused 'Link' import
 import { signIn } from 'next-auth/react';
-import { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'SafeScale AI | The AI Governance & Compliance Platform',
-  description: 'A centralized platform for managing AI governance, risk, and compliance. Get a single source of truth for all your AI assets and automate risk assessments.',
-}
 
 // --- Reusable Feature Component ---
 const Feature = ({ icon, title, children }: { icon: string, title: string, children: React.ReactNode }) => (
