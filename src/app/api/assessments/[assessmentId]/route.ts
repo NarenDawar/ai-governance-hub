@@ -10,7 +10,7 @@ import { authOptions } from '../../../../lib/auth';
 
 export async function GET(
   request: Request,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { assessmentId } = params;
+    const { assessmentId } = await params;
     const assessment = await prisma.assessment.findFirst({
       where: { 
         id: assessmentId,
@@ -41,7 +41,7 @@ export async function GET(
 // PATCH function is updated to send notifications
 export async function PATCH(
   request: Request,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -51,7 +51,7 @@ export async function PATCH(
 
     const body = await request.json();
     const { questions, status, calculatedRiskScore } = body;
-    const { assessmentId } = params;
+    const { assessmentId } = await params;
 
     const originalAssessment = await prisma.assessment.findFirst({ 
       where: { 

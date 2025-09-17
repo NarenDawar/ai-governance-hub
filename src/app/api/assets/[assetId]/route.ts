@@ -10,7 +10,7 @@ import { createAuditLog } from '../../../../lib/auditLog';
  */
 export async function GET(
   request: Request,
-  { params }: { params: { assetId: string } }
+  { params }: { params: Promise<{ assetId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { assetId } = params;
+    const { assetId } = await params;
     const asset = await prisma.aIAsset.findFirst({
       where: {
         id: assetId,
@@ -47,7 +47,7 @@ export async function GET(
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { assetId: string } }
+  { params }: { params: Promise<{ assetId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   // --- MODIFIED: Add Role Check ---
@@ -56,7 +56,7 @@ export async function PATCH(
   }
 
   try {
-    const { assetId } = params;
+    const { assetId } = await params;
     const body = await request.json();
     const { status, riskClassification } = body;
 
@@ -112,7 +112,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { assetId: string } }
+  { params }: { params: Promise<{ assetId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   // --- MODIFIED: Add Role Check ---
@@ -121,7 +121,7 @@ export async function DELETE(
   }
 
   try {
-    const { assetId } = params;
+    const { assetId } = await params;
 
     const asset = await prisma.aIAsset.findFirst({
       where: { id: assetId, organizationId: session.user.organizationId },

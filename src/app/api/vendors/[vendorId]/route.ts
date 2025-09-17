@@ -9,7 +9,7 @@ import { Role } from '@prisma/client'; // Import Role
  */
 export async function GET(
   request: Request,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { vendorId } = params;
+    const { vendorId } = await params;
     const vendor = await prisma.vendor.findUnique({
       where: {
         id: vendorId,
@@ -49,7 +49,7 @@ export async function GET(
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
     const session = await getServerSession(authOptions);
     // --- MODIFIED: Add Role Check ---
@@ -58,7 +58,7 @@ export async function PATCH(
     }
 
     try {
-        const { vendorId } = params;
+        const { vendorId } = await params;
         const body = await request.json();
         const { name, website } = body;
 
@@ -87,7 +87,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   // --- MODIFIED: Add Role Check ---
@@ -96,7 +96,7 @@ export async function DELETE(
   }
 
   try {
-    const { vendorId } = params;
+    const { vendorId } = await params;
     
     const vendor = await prisma.vendor.findFirst({
       where: { id: vendorId, organizationId: session.user.organizationId },
