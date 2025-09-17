@@ -7,10 +7,10 @@ import { authOptions } from '../../../../lib/auth';
 // The second argument is a context object containing params.
 // This is the correct way to type it.
 export async function GET(
-  request: Request, // Changed from NextRequest to Request
-  { params }: { params: { templateId: string } }
+  request: Request,
+  { params }: { params: Promise<{ templateId: string }> }
 ) {
-  const { templateId } = params;
+  const { templateId } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -36,10 +36,10 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request, // Changed from NextRequest to Request
-  { params }: { params: { templateId: string } }
+  request: Request,
+  { params }: { params: Promise<{ templateId: string }> }
 ) {
-  const { templateId } = params;
+  const { templateId } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -74,10 +74,10 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request, // Changed from NextRequest to Request
-  { params }: { params: { templateId: string } }
+  request: Request,
+  { params }: { params: Promise<{ templateId: string }> }
 ) {
-  const { templateId } = params;
+  const { templateId } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
