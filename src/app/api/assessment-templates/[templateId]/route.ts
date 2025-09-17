@@ -3,13 +3,12 @@ import prisma from '../../../../lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../../lib/auth';
 
-// The second argument is a context object containing params.
-// This is the correct way to type it.
+// The second argument's 'params' property should be destructured in the signature.
 export async function GET(
   request: NextRequest,
-  context: { params: { templateId: string } }
+  { params }: { params: { templateId: string } }
 ) {
-  const { templateId } = context.params;
+  const { templateId } = params; // Now access templateId from the destructured params
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -36,9 +35,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  context: { params: { templateId: string } }
+  { params }: { params: { templateId: string } }
 ) {
-  const { templateId } = context.params;
+  const { templateId } = params; // Apply the same fix here
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -74,9 +73,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { templateId: string } }
+  { params }: { params: { templateId: string } }
 ) {
-  const { templateId } = context.params;
+  const { templateId } = params; // And here as well
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
