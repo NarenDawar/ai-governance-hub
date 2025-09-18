@@ -16,11 +16,11 @@ export default function DotGridBackground({
   color = "#4299e1", // Tailwind blue-500
   size = 1
 }: DotGridBackgroundProps) {
-  const particlesInit = useCallback(async (engine: any) => {
+  const particlesInit = useCallback(async (engine: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     await loadSlim(engine);
   }, []);
 
-  const particlesLoaded = useCallback(async (container: any) => {
+  const particlesLoaded = useCallback(async (container: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     // console.log(container); // Optional: for debugging
   }, []);
 
